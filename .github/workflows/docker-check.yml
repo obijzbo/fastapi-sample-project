@@ -1,0 +1,33 @@
+name: Docker CI
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+
+jobs:
+  docker-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Hadolint (Dockerfile Linter)
+        run: pip install hadolint
+
+      - name: Validate Dockerfile
+        run: hadolint Dockerfile
+
+      - name: Build Docker Image
+        run: docker build -t test-image .
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: ${{ github.head_ref || github.ref_name }}
+          base: development
+          title: "Auto PR: ${{ github.ref }}"
+          body: "This PR was auto-generated from ${{ github.ref }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+
