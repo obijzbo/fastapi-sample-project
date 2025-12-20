@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   fastapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: nahiyanswe/fastapi-sample-project:${IMAGE_TAG}
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     working_dir: /app
     ports:
@@ -14,9 +12,7 @@ services:
       - mongodb
 
   celery:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: nahiyanswe/fastapi-sample-project:${IMAGE_TAG}
     command: python worker.py
     working_dir: /app
     depends_on:
