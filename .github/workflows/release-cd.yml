@@ -13,20 +13,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Extract release tag from HEAD ref
+      - name: Download tag artifact from CI
+        uses: actions/download-artifact@v3
+        with:
+          name: release-tag
+          path: .
+
+      - name: Read tag
         run: |
-          REF="${{ github.event.workflow_run.head_commit.ref }}"
-
-          echo "HEAD ref: $REF"
-
-          if [[ "$REF" != refs/tags/* ]]; then
-            echo "ERROR: Workflow was not triggered by a tag"
-            exit 1
-          fi
-
-          TAG="${REF#refs/tags/}"
-          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
-          echo "Deploying tag: $TAG"
+          IMAGE_TAG=$(cat tag.txt)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "Deploying tag: $IMAGE_TAG"
 
       - name: Deploy application on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -35,41 +32,16 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            set -e
-
             APP_DIR=/home/ubuntu/app
             REPO_URL=https://github.com/obijzbo/fastapi-sample-project.git
 
-            echo "Starting deployment of tag: ${IMAGE_TAG}"
-
-            # Ensure required tools
-            if ! command -v git >/dev/null; then
-              sudo apt update && sudo apt install -y git
-            fi
-
-            if ! command -v docker >/dev/null; then
-              echo "Docker not found. Aborting."
-              exit 1
-            fi
-
-            # Clone or update repository
             if [ ! -d "$APP_DIR/.git" ]; then
-              echo "Cloning repository..."
               git clone $REPO_URL $APP_DIR
             else
-              echo "Updating repository..."
               cd $APP_DIR
-              git fetch --tags
-              git checkout main
               git pull origin main
             fi
 
             cd $APP_DIR
-
-            echo "Pulling Docker image..."
             IMAGE_TAG=${IMAGE_TAG} docker compose pull
-
-            echo "Starting containers..."
             IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans
-
-            echo "Deployment successful"
