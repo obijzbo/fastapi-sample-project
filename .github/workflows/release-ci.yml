@@ -32,7 +32,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/fastapi-sample-project:$IMAGE_TAG
 
       - name: Upload tag artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: release-tag
           path: tag.txt
